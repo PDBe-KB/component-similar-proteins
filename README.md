@@ -1,6 +1,9 @@
 PDBe-KB Similar Proteins Component
 =
 
+[![Build Status](https://www.travis-ci.com/PDBe-KB/component-similar-proteins.svg?branch=main)](https://www.travis-ci.com/PDBe-KB/component-similar-proteins)
+[![codecov](https://codecov.io/gh/PDBe-KB/component-similar-proteins/branch/main/graph/badge.svg?token=0VDtWybneZ)](https://codecov.io/gh/PDBe-KB/component-similar-proteins)
+[![Maintainability](https://api.codeclimate.com/v1/badges/9fa3b1ec78b88d5f47ba/maintainability)](https://codeclimate.com/github/PDBe-KB/component-similar-proteins/maintainability)
 
 This repository is for the codebase of a lightweight Angular v7 web component that displays information on similar proteins to an input UniProt accession.
 
