@@ -1,0 +1,247 @@
+<ng-template [ngIf]="similarProteins || similarPDBs">
+
+  <h3>Similar Proteins ({{getCount()}})</h3>
+  <p>Proteins with 90% or greater sequence identity to <strong>{{accession}}</strong></p>
+
+  <!-- Search box -->
+  <div class="small-12 medium-6 columns">
+    <span style="background-color: rgb(116,179,96); color: white; padding: 3px 5px 4px 5px">
+        <i class="icon icon-functional" data-icon="1"></i>&nbsp;Search:&nbsp;
+      </span>
+    <input (keyup)="setSearchTerm($event)" placeholder="e.g. {{getExample()}}"
+           style="min-width: 200px; padding-left: 5px"
+           onclick="gtag('event', 'click', {'event_category': 'gallery', 'event_label': 'search', 'value': 'focused'})">
+    <br>
+    <small><i class="icon icon-generic" data-icon="i"></i>&nbsp;Search by species, taxonomy id or protein name.
+    </small>
+  </div>
+
+  <!-- Download box -->
+  <div class="small-12 medium-6 columns">
+    <app-csv-exporter [data]="getCombinedData()" [accession]="accession" section="similar" category="similar"
+                      [optionalData]="summaries"></app-csv-exporter>
+  </div>
+
+  <!-- Similar PDBs box-->
+  <ng-template [ngIf]="similarPDBs">
+    <div id="" class="small-12 columns" style="margin-top: 25px;">
+      <h4 id="similar-pdbs" (click)="showOrCollapse('similar-pdbs')">
+        <i *ngIf="collapsed['similar-pdbs']" class="icon icon-functional" data-icon="+"></i>
+        <i *ngIf="!collapsed['similar-pdbs']" class="icon icon-functional" data-icon="-"></i>
+        Similar Proteins with highly identical PDB sequences to {{accession}} ({{similarPDBs.length}})
+      </h4>
+      <p>PDB entries with more than 90% sequence identity to the protein of interest.</p>
+
+      <ng-template [ngIf]="!collapsed['similar-pdbs']">
+        <div class="show-for-large row" style="text-align: center; margin-bottom: 10px">
+          <div class="medium-12 large-2 columns header">Protein Name (UniProt ID)</div>
+          <div class="medium-12 large-3 columns header">Species</div>
+          <div class="medium-12 large-4 columns header">Segments Mapped to PDB<br>
+            <span style="font-size: smaller"><i class="icon icon-functional" data-icon="4"></i> Click on a box for 3D view</span></div>
+          <div class="medium-12 large-2 columns header">Navigate</div>
+          <div class="medium-12 large-1 columns header"></div>
+        </div>
+
+        <div *ngFor="let item of filterData(similarPDBs)" class="row" style="text-align: left">
+          <div class="medium-12 large-2 columns">
+            <span class="hide-for-large">
+              <strong>Protein name (UniProt ID):&nbsp;</strong>
+            </span>
+            {{item.description}} ({{item.uniprot_id}})
+          </div>
+          <div class="medium-12 large-3 columns" style="font-style: italic">
+            <span class="hide-for-large">
+              <strong>Species:&nbsp;</strong>
+            </span>
+            {{item.species}}
+          </div>
+          <div class="medium-12 large-2 columns">
+            <div style="width: 100%; height: 30px; position:relative">
+              <div style="width: 100%; background-color: #8c8c8c; height: 4px; position:relative; top:-4px"></div>
+              <div *ngFor="let pdb of item.mapped_segment">
+                <div [ngStyle]="getSectionStyle(pdb, item.unp_length, false)" class="segment label-tooltip"
+                     (click)="openMolstarDialog(pdb)">
+                  <span class="label-tooltip-text">PDB {{pdb.pdb_id}} chain {{pdb.best_chain}}
+                    (UniProt range {{pdb.unp_start}} - {{pdb.unp_end}})</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="medium-12 large-2 columns" style="text-align: center">
+            PDB <strong>{{item.mapped_segment[0].pdb_id}}</strong> chain
+            <strong>{{item.mapped_segment[0].best_chain}}</strong>
+          </div>
+          <div class="medium-12 large-2 columns" style="text-align: center">
+            <a class="button" href="/pdbe/pdbe-kb/proteins/{{item.uniprot_id}}" style="font-size: smaller"
+               target="_blank">
+              <i class="icon icon-generic" data-icon="x"></i>&nbsp;View Page
+            </a>
+            <span class="hide-for-large">
+            <hr>
+          </span>
+          </div>
+          <div class="medium-12 large-1 columns header"></div>
+        </div>
+      </ng-template>
+
+      </div>
+  </ng-template>
+
+  <!-- Similar proteins box -->
+  <ng-template [ngIf]="similarProteins">
+    <div *ngIf="getSummaryCount() > 0" class="small-12 columns">
+      <h4 style="margin-bottom: 10px">Similar Proteins with Structural Data ({{getSummaryCount()}})</h4>
+      <p>These proteins are in the same UniRef90 cluster as the protein of interest and have one or more protein
+        structures in PDB.</p>
+
+      <div class="row show-for-large" style="text-align: center; margin-bottom: 10px">
+        <div class="medium-12 large-2 columns header">Protein Name (UniProt ID)</div>
+        <div class="medium-12 large-3 columns header">Species</div>
+        <div class="medium-12 large-2 columns header">
+          Representative Structures&nbsp;
+          <span style="font-size: smaller"><i class="icon icon-functional" data-icon="4"></i> Click on a box for 3D view</span>
+        </div>
+        <div class="medium-12 large-1 columns header">Coverage</div>
+        <div class="medium-12 large-2 columns header">Available Structural Data</div>
+        <div class="medium-12 large-2 columns header">Navigate</div>
+      </div>
+
+      <div *ngFor="let item of filterData(similarProteins)" class="row" style="text-align: left">
+        <ng-template [ngIf]="item.representative_pdbs.length > 0">
+          <div class="medium-12 large-2 columns">
+          <span class="hide-for-large">
+            <strong>Protein name (UniProt ID):&nbsp;</strong>
+          </span>
+            {{item.description}} ({{item.uniprot_id}})
+          </div>
+          <div class="medium-12 large-3 columns" style="font-style: italic">
+          <span class="hide-for-large">
+            <strong>Species:&nbsp;</strong>
+          </span>
+            {{item.species}}
+          </div>
+          <div class="medium-12 large-2 columns">
+            <div style="width: 100%; height: 30px; position:relative">
+              <div style="width: 100%; background-color: #8c8c8c; height: 4px; position:relative; top:-4px"></div>
+              <div *ngFor="let pdb of item.representative_pdbs">
+                <div [ngStyle]="getSectionStyle(pdb, item.unp_length, true)" class="segment label-tooltip"
+                     (click)="openMolstarDialog(pdb)">
+                </div>
+                <div *ngIf="pdb.observed_regions.length > 0">
+                  <div *ngFor="let observed of pdb.observed_regions">
+                    <div [ngStyle]="getSectionStyle(observed, item.unp_length, false)" class="segment label-tooltip"
+                         (click)="openMolstarDialog(pdb)">
+                      <span class="label-tooltip-text">PDB {{pdb.pdb_id}} chain {{pdb.best_chain}}
+                        (UniProt range {{observed.unp_start}} - {{observed.unp_end}})</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="medium-12 large-1 columns" style="text-align: center">
+          <span class="hide-for-large">
+            <strong>Coverage:&nbsp;</strong>
+          </span>
+            {{showCoverage(item.coverage)}}
+          </div>
+          <div class="medium-12 large-2 columns" style="font-weight: bold; font-size: 1.2em; text-align: center">
+            <div *ngIf="summaries[item.uniprot_id]" class="small-4 columns label-tooltip"
+                 [ngStyle]="getIconStyle(summaries[item.uniprot_id]['pdbs'])">
+              <i class="icon icon-conceptual" data-icon="s"></i>&nbsp;{{summaries[item.uniprot_id]['pdbs']}}
+              <span class="label-tooltip-text"
+                    style="font-weight: normal; font-size: initial">Number of PDB structures</span>
+            </div>
+            <div *ngIf="summaries[item.uniprot_id]" class="small-4 columns label-tooltip"
+                 [ngStyle]="getIconStyle(summaries[item.uniprot_id]['ligands'])">
+              <i class="icon icon-conceptual" data-icon="b"></i>&nbsp;{{summaries[item.uniprot_id]['ligands']}}
+              <span class="label-tooltip-text" style="font-weight: normal; font-size: initial">Number of ligands</span>
+            </div>
+            <div *ngIf="summaries[item.uniprot_id]" class="small-4 columns label-tooltip"
+                 [ngStyle]="getIconStyle(summaries[item.uniprot_id]['interaction_partners'])">
+              <i class="icon icon-conceptual"
+                 data-icon="y"></i>&nbsp;{{summaries[item.uniprot_id]['interaction_partners']}}
+              <span class="label-tooltip-text" style="font-weight: normal; font-size: initial">Number of interaction partners</span>
+            </div>
+          </div>
+          <div class="medium-12 large-2 columns" style="text-align: center">
+            <a class="button" href="/pdbe/pdbe-kb/proteins/{{item.uniprot_id}}" style="font-size: smaller"
+               target="_blank">
+              <i class="icon icon-generic" data-icon="x"></i>&nbsp;View Page
+            </a>
+            <span class="hide-for-large">
+            <hr>
+          </span>
+          </div>
+        </ng-template>
+
+      </div>
+    </div>
+
+    <div *ngIf="similarProteins.length - getSummaryCount() > 0" class="small-12 columns" style="margin-top: 25px;">
+      <h4 id="similar-with-no-data" (click)="showOrCollapse('similar-with-no-data')">
+        <i *ngIf="collapsed['similar-with-no-data']" class="icon icon-functional" data-icon="+"></i>
+        <i *ngIf="!collapsed['similar-with-no-data']" class="icon icon-functional" data-icon="-"></i>
+        Similar Proteins without Structural Data in the PDB ({{similarProteins.length - getSummaryCount()}})
+      </h4>
+      <p>These proteins do not have structures in the PDB, but a large segment can be mapped to a sequence with structure with minimum 90% sequence identity.</p>
+
+      <ng-template [ngIf]="!collapsed['similar-with-no-data']">
+        <div class="show-for-large row" style="text-align: center; margin-bottom: 10px">
+          <div class="medium-12 large-2 columns header">Protein Name (UniProt ID)</div>
+          <div class="medium-12 large-3 columns header">Species</div>
+          <div class="medium-12 large-4 columns header">Segments Mapped to PDB<br>
+            <span style="font-size: smaller"><i class="icon icon-functional" data-icon="4"></i> Click on a box for 3D view</span></div>
+          <div class="medium-12 large-2 columns header">Navigate</div>
+          <div class="medium-12 large-1 columns header">&nbsp;</div>
+        </div>
+
+        <div *ngFor="let item of filterData(similarProteins)" class="row" style="text-align: left">
+          <ng-template [ngIf]="item.representative_pdbs.length === 0">
+            <div class="medium-12 large-2 columns">
+            <span class="hide-for-large">
+              <strong>Protein name (UniProt ID):&nbsp;</strong>
+            </span>
+              {{item.description}} ({{item.uniprot_id}})
+            </div>
+            <div class="medium-12 large-3 columns" style="font-style: italic">
+            <span class="hide-for-large">
+              <strong>Species:&nbsp;</strong>
+            </span>
+              {{item.species}}
+            </div>
+            <div class="medium-12 large-2 columns">
+              <div style="width: 100%; height: 30px; position:relative">
+                <div style="width: 100%; background-color: #8c8c8c; height: 4px; position:relative; top:-4px"></div>
+                <div *ngFor="let pdb of item.mapped_segment">
+                  <div [ngStyle]="getSectionStyle(pdb, item.unp_length, false)" class="segment label-tooltip"
+                       (click)="openMolstarDialog(pdb)">
+                    <span class="label-tooltip-text">PDB {{pdb.pdb_id}} chain {{pdb.best_chain}}
+                      (UniProt range {{pdb.unp_start}} - {{pdb.unp_end}})</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="medium-12 large-2 columns" style="text-align: center">
+              PDB <strong>{{item.mapped_segment[0].pdb_id}}</strong> chain
+              <strong>{{item.mapped_segment[0].best_chain}}</strong>
+            </div>
+            <div class="medium-12 large-2 columns" style="text-align: center">
+              <a class="button"
+                 href="/pdbe/entry/pdb/{{item.mapped_segment[0].pdb_id}}/protein/{{item.mapped_segment[0].entity_id}}"
+                 style="font-size: smaller" target="_blank">
+                <i class="icon icon-generic" data-icon="x"></i>&nbsp;View PDB Entry
+              </a>
+              <span class="hide-for-large">
+              <hr>
+            </span>
+            </div>
+            <div class="medium-12 large-1 columns header">&nbsp;</div>
+          </ng-template>
+        </div>
+      </ng-template>
+
+    </div>
+  </ng-template>
+
+</ng-template>
