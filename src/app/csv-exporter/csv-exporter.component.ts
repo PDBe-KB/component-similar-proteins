@@ -1,4 +1,4 @@
-import {Component} from '@angular/core';
+import {Component, Input} from '@angular/core';
 
 @Component({
   selector: 'app-csv-exporter',
@@ -6,6 +6,9 @@ import {Component} from '@angular/core';
   styles: ['']
 })
 export class CsvExporterComponent {
+  @Input() data: any;
+  @Input() accession: any;
+  @Input() optionalData: any;
 }
 
 // THIS IS A PLACEHOLDER COMPONENT
